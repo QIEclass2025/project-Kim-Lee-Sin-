@@ -1,0 +1,59 @@
+import tkinter as tk
+import random
+
+# 활동 DB: (ID, 장소, 동적/정적, 혼자/함께, 행동명)
+activities = [
+    (1, "실내", "정적", "혼자", "책 읽기"),
+    (2, "실내", "정적", "함께", "보드게임"),
+    (3, "실내", "동적", "혼자", "홈트레이닝"),
+    (4, "실외", "동적", "혼자", "러닝"),
+    (5, "실외", "동적", "함께", "배드민턴"),
+]
+
+def recommend():
+    place = place_var.get()
+    motion = motion_var.get()
+    group = group_var.get()
+
+    # 조건에 맞는 행동 ID만 리스트로 추출
+    filtered_ids = [a[0] for a in activities if a[1] == place and a[2] == motion and a[3] == group]
+
+    if not filtered_ids:
+        result_var.set("조건에 맞는 행동이 없습니다.")
+        return
+
+    # 난수 기반으로 행동 ID 선택
+    selected_id = random.choice(filtered_ids)
+
+    # 선택된 ID에 해당하는 행동 찾기
+    for a in activities:
+        if a[0] == selected_id:
+            result_var.set(f"추천 번호: {selected_id}\n행동: {a[4]}")
+            return
+
+root = tk.Tk()
+root.title("행동 추천 프로그램")
+root.geometry("300x300")
+
+place_var = tk.StringVar(value="실내")
+motion_var = tk.StringVar(value="정적")
+group_var = tk.StringVar(value="혼자")
+result_var = tk.StringVar(value="추천 결과가 여기에 표시됩니다.")
+
+# 옵션 선택 UI
+tk.Label(root, text="실내 / 실외").pack()
+tk.Radiobutton(root, text="실내", variable=place_var, value="실내").pack()
+tk.Radiobutton(root, text="실외", variable=place_var, value="실외").pack()
+
+tk.Label(root, text="정적 / 동적").pack()
+tk.Radiobutton(root, text="정적", variable=motion_var, value="정적").pack()
+tk.Radiobutton(root, text="동적", variable=motion_var, value="동적").pack()
+
+tk.Label(root, text="혼자 / 함께").pack()
+tk.Radiobutton(root, text="혼자", variable=group_var, value="혼자").pack()
+tk.Radiobutton(root, text="함께", variable=group_var, value="함께").pack()
+
+tk.Button(root, text="추천 받기", command=recommend).pack(pady=10)
+tk.Label(root, textvariable=result_var, wraplength=250).pack(pady=10)
+
+root.mainloop()
