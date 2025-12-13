@@ -18,37 +18,9 @@ ctk.set_default_color_theme("blue")
 # 맵 생성 및 서버 실행 로직 (map.py 기반)
 # -----------------------------
 
-# 웹 서버의 포트 번호
-PORT = 8000
-# 생성될 HTML 파일 이름
-OUTPUT_HTML = 'result_map.html'
 
-def start_http_server():
-    """백그라운드 스레드에서 웹 서버를 시작합니다."""
-    Handler = http.server.SimpleHTTPRequestHandler
-    try:
-        # 127.0.0.1 (localhost) 에서만 접근 가능하도록 설정
-        with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
-            print(f"로컬 서버가 시작되었습니다. (http://127.0.0.1:{PORT})")
-            httpd.serve_forever()
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print(f"오류: {PORT}번 포트가 이미 사용 중입니다. (에러 메시지: {e})")
-        else:
-            print(f"서버 실행 중 오류 발생: {e}")
-    except Exception as e:
-        print(f"서버 실행 중 알 수 없는 오류 발생: {e}")
 
 def generate_and_serve_map(target_name):
-    import json
-    import webbrowser
-    import os
-    import sys
-    import http.server
-    import socketserver
-    import threading
-    import time
-
     with open('activities.json', 'r', encoding='utf-8') as f:
         all_activities = json.load(f)
 
