@@ -18,42 +18,15 @@ ctk.set_default_color_theme("blue")
 # 맵 생성 및 서버 실행 로직 (map.py 기반)
 # -----------------------------
 
-# 웹 서버의 포트 번호
-PORT = 8000
-# 생성될 HTML 파일 이름
-OUTPUT_HTML = 'result_map.html'
-
-def start_http_server():
-    """백그라운드 스레드에서 웹 서버를 시작합니다."""
-    Handler = http.server.SimpleHTTPRequestHandler
-    try:
-        # 127.0.0.1 (localhost) 에서만 접근 가능하도록 설정
-        with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
-            print(f"로컬 서버가 시작되었습니다. (http://127.0.0.1:{PORT})")
-            httpd.serve_forever()
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print(f"오류: {PORT}번 포트가 이미 사용 중입니다. (에러 메시지: {e})")
-        else:
-            print(f"서버 실행 중 오류 발생: {e}")
-    except Exception as e:
-        print(f"서버 실행 중 알 수 없는 오류 발생: {e}")
+server_started = False
 
 def generate_and_serve_map(target_name):
-    import json
-    import webbrowser
-    import os
-    import sys
-    import http.server
-    import socketserver
-    import threading
-    import time
+    global server_started
 
     with open('activities.json', 'r', encoding='utf-8') as f:
         all_activities = json.load(f)
 
     recommended_list = []
-
     for item in all_activities:
         if item.get('name') == target_name:
             recommended_list.append(item)
@@ -71,21 +44,29 @@ def generate_and_serve_map(target_name):
     PORT = 8000
 
     def open_browser():
+        time.sleep(0.5)
         webbrowser.open(url=f'http://localhost:{PORT}/{output_path}')
 
     threading.Thread(target=open_browser).start()
 
-    print(f"로컬서버가 시작되었습니다. (http://localhost:{PORT})")
+    if not server_started:
+        def run_server():
+            Handler = http.server.SimpleHTTPRequestHandler
+            socketserver.TCPServer.allow_reuse_address = True
 
-    Handler = http.server.SimpleHTTPRequestHandler
-    try:
-        with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            httpd.serve_forever()
-    except OSError:
-        print(f"오류: {PORT}번 포트가 이미 사용 중입니다. 실행 중인 다른 서버를 끄거나 포트를 변경하세요.")
-    except KeyboardInterrupt:
-        print("\n서버를 종료합니다.")
+            try:
+                with socketserver.TCPServer(("", PORT), Handler) as httpd:
+                    print(f"로컬서버가 백그라운드에서 시작되었습니다. (http://localhost:{PORT})")
+                    httpd.serve_forever()
+            except OSError as e:
+                print(f"서버 포트 오류 (이미 사용 중일 수 있음): {e}")
 
+        server_thread = threading.Thread(target=run_server, daemon=True)
+        server_thread.start()
+
+        server_started = True
+    else:
+        print("서버가 이미 실행 중입니다. HTML 파일만 갱신하고 브라우저를 엽니다.")
 
 # -----------------------------
 # 기존 조건 선택 추천 프로그램 (renewal.py 기반)
