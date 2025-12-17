@@ -8,7 +8,8 @@
         #logo { position: fixed; top: 15px; left: 15px; width: 50px; height: auto; z-index: 10; transition: transform 0.2s;}
         #logo:hover { transform: scale(1.1); }
         #my-loc-btn {
-            position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; z-index: 10; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: pointer; display: flex; justify-content: center; align-items: center;
+            position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; z-index: 10; background-color: white;
+            border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: pointer; display: flex; justify-content: center; align-items: center;
         }
         #my-loc-btn:hover { background-color: #f5f5f5; }
         #my-loc-btn img { width: 24px; height: 24px; opacity: 0.8; }
@@ -28,182 +29,232 @@
 </head>
 <body>
 <a href ="https://www.skku.edu" target="_blank">
-    <img id = "logo" src ="https://i.namu.wiki/i/wzsgoeVHojU-_u8Tgtcvx_5kQznyYtf6nlDmURJKAyIONddMYH8gHnUv2rRdokvp_ff-Ag0F4N5_LsUVZ6YZCR-QzSrFy-FBcQJEaMYsaJMJGzRt_HRFQEtIGjIlOsDdIK2L2lLVtkofpQE9waXNfA.svg", alt="로고">
+    <img id = "logo" src ="https://i.namu.wiki/i/wzsgoeVHojU-_u8Tgtcvx_5kQznyYtf6nlDmURJKAyIONddMYH8gHnUv2rRdokvp_ff-Ag0F4N5_LsUVZ6YZCR-QzSrFy-FBcQJEaMYsaJMJGzRt_HRFQEtIGjIlOsDdIK2L2lLVtkofpQE9waXNfA.svg" alt="로고">
 </a>
 <div id="map">
     <div id ="my-loc-btn" onclick="moveToMyLocation()" title="현위치로 이동">
-       <img src = "https://cdn-icons-png.flaticon.com/512/106/106438.png " alt = "현위치">
+        <img src = "https://cdn-icons-png.flaticon.com/512/106/106438.png " alt = "현위치">
     </div>
 </div>
 
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=키 가림&libraries=services"></script>
+<script type="text/javascript"
+        src="//dapi.kakao.com/v2/maps/sdk.js?appkey=키 가림&libraries=services"
+        onerror="alert('Kakao 지도 API 스크립트를 불러오는데 실패했습니다.\n네트워크 상태를 확인하거나 API 키가 올바른지 확인해주세요.');">
+</script>
 
 <script>
-    var mapContainer = document.getElementById('map');
-    var mapOption = { center: new kakao.maps.LatLng(37.293901, 126.974851), level: 5 };
-    var map = new kakao.maps.Map(mapContainer, mapOption);
-    var geocoder = new kakao.maps.services.Geocoder();
+    // 전역 에러 핸들러: 스크립트 내 문법 오류 등을 잡습니다.
+    window.onerror = function(message, source, lineno, colno, error) {
+        console.error("Global Error Caught:", message);
+        // 사용자에게 방해되지 않도록 치명적인 경우에만 alert 등을 고려
+    };
 
-    var recommendedData = /* PYTHON_DATA_HERE */;
+    // 메인 로직을 try-catch로 감싸 안전하게 실행
+    try {
+        // 1. Kakao API 객체 로드 확인
+        if (typeof kakao === 'undefined' || !kakao.maps) {
+            throw new Error("Kakao 지도 API가 정상적으로 로드되지 않았습니다. API 키를 확인해주세요. (Kakao Developers 사이트에서 도메인 등록 확인 필요)");
+        }
 
-    var Myimgsrc = 'https://cdn-icons-png.flaticon.com/512/5988/5988611.png';
-    var Myimg = new kakao.maps.MarkerImage(Myimgsrc, new kakao.maps.Size(50,50), {offset: new kakao.maps.Point(25,25)});
+        var mapContainer = document.getElementById('map');
+        var mapOption = { center: new kakao.maps.LatLng(37.293901, 126.974851), level: 5 };
+        var map = new kakao.maps.Map(mapContainer, mapOption);
+        var geocoder = new kakao.maps.services.Geocoder();
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var loc = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
-            new kakao.maps.Marker({ position: loc, image: Myimg, map: map });
-            map.panTo(loc);
-        });
-    }
-    
-    function moveToMyLocation() {
+        // 2. 데이터 유효성 검사
+        // 실제 Python 등에서 데이터를 주입할 때 문법 오류가 생길 수 있으므로 주의해야 합니다.
+        // 데이터가 없는 경우를 대비해 기본값 [] 혹은 null 처리를 합니다.
+        var recommendedData = /* PYTHON_DATA_HERE */;
+
+        if (!recommendedData) {
+            console.warn("데이터가 비어있습니다.");
+            alert("표시할 장소 데이터가 없습니다. (데이터 로드 실패)");
+            recommendedData = []; // 빈 배열로 초기화하여 오류 방지
+        } else if (!Array.isArray(recommendedData)) {
+            throw new Error("데이터 형식이 올바르지 않습니다. (Array 형태가 아님)");
+        }
+
+        var Myimgsrc = 'https://cdn-icons-png.flaticon.com/512/5988/5988611.png';
+        var Myimg = new kakao.maps.MarkerImage(Myimgsrc, new kakao.maps.Size(50,50), {offset: new kakao.maps.Point(25,25)});
+
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
-                var moveLatLon = new kakao.maps.LatLng(lat, lng);
-                map.panTo(moveLatLon);
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var loc = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                new kakao.maps.Marker({ position: loc, image: Myimg, map: map });
+                map.panTo(loc);
+            }, function(error) {
+                console.warn("위치 정보를 가져올 수 없습니다:", error.message);
+                // 위치 권한 거부 등은 치명적 오류가 아니므로 alert는 생략하거나 필요시 추가
             });
         }
-    }
 
-    showMarkers(recommendedData);
-
-    function showMarkers(data) {
-        if (!data) return;
-
-        data.forEach(function(item) {
-            if (!item.place || !item.place.lat || !item.place.lng) return;
-
-            var markerPosition = new kakao.maps.LatLng(item.place.lat, item.place.lng);
-            var marker = new kakao.maps.Marker({ position: markerPosition });
-            marker.setMap(map);
-
-            var tracker = new MarkerTracker(map, marker);
-            tracker.run();
-
-            var infowindow = new kakao.maps.InfoWindow({
-                zIndex: 1,
-                removable: true
-            });
-
-            geocoder.coord2Address(item.place.lng, item.place.lat, function(result, status) {
-                if (status === kakao.maps.services.Status.OK) {
-                    var addr = result[0].road_address ? result[0].road_address.address_name : result[0].address.address_name;
-                    var tagsHtml = '';
-                    if (item.tags) item.tags.forEach(t => tagsHtml += '<span class="tag-badge">' + t + '</span>');
-
-                    var content =
-                        '<div class="info-window-wrap">' +
-                            '<div class="info-title">' + item.name + '</div>' +
-                            '<div class="info-place">📍 ' + item.place.name + '</div>' +
-                            '<div class="info-addr">(' + addr + ')</div>' +
-                            '<div class="info-tags">' + tagsHtml + '</div>' +
-                        '</div>';
-
-                    infowindow.setContent(content);
-                    infowindow.open(map, marker);
-                }
-            });
-        });
-    }
-
-    function MarkerTracker(map, target) {
-        var OUTCODE = { INSIDE: 0, TOP: 8, RIGHT: 2, BOTTOM: 4, LEFT: 1 };
-        var BOUNDS_BUFFER = 30;
-        var CLIP_BUFFER = 40;
-
-        var tracker = document.createElement('div');
-        tracker.className = 'tracker';
-        map.getNode().appendChild(tracker);
-
-        tracker.onclick = function() {
-            map.setCenter(target.getPosition());
-            setVisible(false);
-        };
-
-        function tracking() {
-            var proj = map.getProjection();
-            var bounds = map.getBounds();
-            var extBounds = extendBounds(bounds, proj);
-
-            if (extBounds.contain(target.getPosition())) {
-                setVisible(false);
+        function moveToMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    var moveLatLon = new kakao.maps.LatLng(lat, lng);
+                    map.panTo(moveLatLon);
+                }, function() {
+                    alert("현재 위치를 가져올 수 없습니다. 브라우저의 위치 정보 접근 권한을 확인해주세요.");
+                });
             } else {
-                var pos = proj.containerPointFromCoords(target.getPosition());
-                var center = proj.containerPointFromCoords(map.getCenter());
-                var sw = proj.containerPointFromCoords(bounds.getSouthWest());
-                var ne = proj.containerPointFromCoords(bounds.getNorthEast());
-
-                var top = ne.y + CLIP_BUFFER;
-                var right = ne.x - CLIP_BUFFER;
-                var bottom = sw.y - CLIP_BUFFER;
-                var left = sw.x + CLIP_BUFFER;
-
-                var clipPosition = getClipPosition(top, right, bottom, left, center, pos);
-                tracker.style.top = clipPosition.y + 'px';
-                tracker.style.left = clipPosition.x + 'px';
-
-                var angle = getAngle(center, pos);
-
-                tracker.style.transform = 'rotate(' + angle + 'deg)';
-                tracker.style.msTransform = 'rotate(' + angle + 'deg)';
-                tracker.style.webkitTransform = 'rotate(' + angle + 'deg)';
-
-                setVisible(true);
+                alert("이 브라우저에서는 위치 정보 기능을 지원하지 않습니다.");
             }
         }
 
-        function setVisible(visible) { tracker.style.display = visible ? 'block' : 'none'; }
-        function hideTracker() { setVisible(false); }
+        showMarkers(recommendedData);
 
-        this.run = function() {
-            kakao.maps.event.addListener(map, 'zoom_start', hideTracker);
-            kakao.maps.event.addListener(map, 'zoom_changed', tracking);
-            kakao.maps.event.addListener(map, 'center_changed', tracking);
-            tracking();
-        };
-        this.stop = function() {
-            kakao.maps.event.removeListener(map, 'zoom_start', hideTracker);
-            kakao.maps.event.removeListener(map, 'zoom_changed', tracking);
-            kakao.maps.event.removeListener(map, 'center_changed', tracking);
-            setVisible(false);
-        };
-    }
+        function showMarkers(data) {
+            if (!data) return;
 
-    function extendBounds(bounds, proj) {
-        var sw = proj.pointFromCoords(bounds.getSouthWest());
-        var ne = proj.pointFromCoords(bounds.getNorthEast());
-        sw.x -= 30; sw.y += 30; ne.x += 30; ne.y -= 30;
-        return new kakao.maps.LatLngBounds(proj.coordsFromPoint(sw), proj.coordsFromPoint(ne));
-    }
+            data.forEach(function(item) {
+                // 개별 데이터 아이템 유효성 검사
+                if (!item.place || !item.place.lat || !item.place.lng) {
+                    console.warn("잘못된 장소 데이터가 있어 건너뜁니다:", item);
+                    return;
+                }
 
-    function getClipPosition(top, right, bottom, left, inner, outer) {
-        function calcOutcode(x, y) {
-            var outcode = 0;
-            if (x < left) outcode |= 1; else if (x > right) outcode |= 2;
-            if (y < top) outcode |= 8; else if (y > bottom) outcode |= 4;
-            return outcode;
+                var markerPosition = new kakao.maps.LatLng(item.place.lat, item.place.lng);
+                var marker = new kakao.maps.Marker({ position: markerPosition });
+                marker.setMap(map);
+
+                // Tracker 로직 내에서도 오류 발생 가능성이 있으므로 내부 예외 처리 고려 가능
+                var tracker = new MarkerTracker(map, marker);
+                tracker.run();
+
+                var infowindow = new kakao.maps.InfoWindow({
+                    zIndex: 1,
+                    removable: true
+                });
+
+                geocoder.coord2Address(item.place.lng, item.place.lat, function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        var addr = result[0].road_address ? result[0].road_address.address_name : result[0].address.address_name;
+                        var tagsHtml = '';
+                        if (item.tags) item.tags.forEach(t => tagsHtml += '<span class="tag-badge">' + t + '</span>');
+
+                        var content =
+                            '<div class="info-window-wrap">' +
+                            '<div class="info-title">' + (item.name || '이름 없음') + '</div>' +
+                            '<div class="info-place">📍 ' + (item.place.name || '') + '</div>' +
+                            '<div class="info-addr">(' + addr + ')</div>' +
+                            '<div class="info-tags">' + tagsHtml + '</div>' +
+                            '</div>';
+
+                        infowindow.setContent(content);
+                        infowindow.open(map, marker);
+                    } else {
+                        // 주소 변환 실패 시 로그
+                        console.warn("주소 변환 실패:", item.place.name);
+                    }
+                });
+            });
         }
-        var ix = inner.x, iy = inner.y, ox = outer.x, oy = outer.y;
-        var code = calcOutcode(ox, oy);
-        while(true) {
-            if (!code) break;
-            if (code & 8) { ox = ox + (ix - ox) / (iy - oy) * (top - oy); oy = top; }
-            else if (code & 2) { oy = oy + (iy - oy) / (ix - ox) * (right - ox); ox = right; }
-            else if (code & 4) { ox = ox + (ix - ox) / (iy - oy) * (bottom - oy); oy = bottom; }
-            else if (code & 1) { oy = oy + (iy - oy) / (ix - ox) * (left - ox); ox = left; }
-            code = calcOutcode(ox, oy);
-        }
-        return {x: ox, y: oy};
-    }
 
-    function getAngle(center, target) {
-        var dx = target.x - center.x;
-        var dy = center.y - target.y ;
-        var deg = Math.atan2( dy , dx ) * 180 / Math.PI;
-        return ((-deg + 360) % 360 | 0) + 90;
+        // --- MarkerTracker 관련 함수들 ---
+        function MarkerTracker(map, target) {
+            var OUTCODE = { INSIDE: 0, TOP: 8, RIGHT: 2, BOTTOM: 4, LEFT: 1 };
+            var BOUNDS_BUFFER = 30;
+            var CLIP_BUFFER = 40;
+
+            var tracker = document.createElement('div');
+            tracker.className = 'tracker';
+            var node = map.getNode();
+            if(node) node.appendChild(tracker); // map node 존재 확인
+
+            tracker.onclick = function() {
+                map.setCenter(target.getPosition());
+                setVisible(false);
+            };
+
+            function tracking() {
+                var proj = map.getProjection();
+                var bounds = map.getBounds();
+                var extBounds = extendBounds(bounds, proj);
+
+                if (extBounds.contain(target.getPosition())) {
+                    setVisible(false);
+                } else {
+                    var pos = proj.containerPointFromCoords(target.getPosition());
+                    var center = proj.containerPointFromCoords(map.getCenter());
+                    var sw = proj.containerPointFromCoords(bounds.getSouthWest());
+                    var ne = proj.containerPointFromCoords(bounds.getNorthEast());
+
+                    var top = ne.y + CLIP_BUFFER;
+                    var right = ne.x - CLIP_BUFFER;
+                    var bottom = sw.y - CLIP_BUFFER;
+                    var left = sw.x + CLIP_BUFFER;
+
+                    var clipPosition = getClipPosition(top, right, bottom, left, center, pos);
+                    tracker.style.top = clipPosition.y + 'px';
+                    tracker.style.left = clipPosition.x + 'px';
+
+                    var angle = getAngle(center, pos);
+
+                    tracker.style.transform = 'rotate(' + angle + 'deg)';
+                    tracker.style.msTransform = 'rotate(' + angle + 'deg)';
+                    tracker.style.webkitTransform = 'rotate(' + angle + 'deg)';
+
+                    setVisible(true);
+                }
+            }
+
+            function setVisible(visible) { tracker.style.display = visible ? 'block' : 'none'; }
+            function hideTracker() { setVisible(false); }
+
+            this.run = function() {
+                kakao.maps.event.addListener(map, 'zoom_start', hideTracker);
+                kakao.maps.event.addListener(map, 'zoom_changed', tracking);
+                kakao.maps.event.addListener(map, 'center_changed', tracking);
+                tracking();
+            };
+            this.stop = function() {
+                kakao.maps.event.removeListener(map, 'zoom_start', hideTracker);
+                kakao.maps.event.removeListener(map, 'zoom_changed', tracking);
+                kakao.maps.event.removeListener(map, 'center_changed', tracking);
+                setVisible(false);
+            };
+        }
+
+        function extendBounds(bounds, proj) {
+            var sw = proj.pointFromCoords(bounds.getSouthWest());
+            var ne = proj.pointFromCoords(bounds.getNorthEast());
+            sw.x -= 30; sw.y += 30; ne.x += 30; ne.y -= 30;
+            return new kakao.maps.LatLngBounds(proj.coordsFromPoint(sw), proj.coordsFromPoint(ne));
+        }
+
+        function getClipPosition(top, right, bottom, left, inner, outer) {
+            function calcOutcode(x, y) {
+                var outcode = 0;
+                if (x < left) outcode |= 1; else if (x > right) outcode |= 2;
+                if (y < top) outcode |= 8; else if (y > bottom) outcode |= 4;
+                return outcode;
+            }
+            var ix = inner.x, iy = inner.y, ox = outer.x, oy = outer.y;
+            var code = calcOutcode(ox, oy);
+            while(true) {
+                if (!code) break;
+                if (code & 8) { ox = ox + (ix - ox) / (iy - oy) * (top - oy); oy = top; }
+                else if (code & 2) { oy = oy + (iy - oy) / (ix - ox) * (right - ox); ox = right; }
+                else if (code & 4) { ox = ox + (ix - ox) / (iy - oy) * (bottom - oy); oy = bottom; }
+                else if (code & 1) { oy = oy + (iy - oy) / (ix - ox) * (left - ox); ox = left; }
+                code = calcOutcode(ox, oy);
+            }
+            return {x: ox, y: oy};
+        }
+
+        function getAngle(center, target) {
+            var dx = target.x - center.x;
+            var dy = center.y - target.y ;
+            var deg = Math.atan2( dy , dx ) * 180 / Math.PI;
+            return ((-deg + 360) % 360 | 0) + 90;
+        }
+
+    } catch (e) {
+        // 모든 스크립트 실행 중 발생한 오류를 잡아 사용자에게 알림
+        console.error(e);
+        alert("지도를 실행하는 중 오류가 발생했습니다:\n" + e.message);
     }
 </script>
 </body>
